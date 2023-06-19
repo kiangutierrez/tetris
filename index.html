@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tetris Game</title>
+    <style>
+        #game-board {
+            position: relative;
+            width: 200px;
+            height: 400px;
+            border: 1px solid black;
+        }
+
+        .block {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-board"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameBoard = document.getElementById('game-board');
+            const width = 10;
+            const height = 20;
+            const blockSize = 20;
+            const board = Array.from(Array(height), () => Array(width).fill(0));
+            let currentBlock = null;
+
+            function createBlock() {
+                const blocks = [
+                    [[1, 1], [1, 1]], // Square
+                    [[1, 1, 1, 1]], // Line
+                    [[1, 1, 1], [0, 1, 0]], // T-shape
+                    [[1, 1, 0], [0, 1, 1]], // Z-shape
+                    [[0, 1, 1], [1, 1, 0]] // S-shape
+                ];
+                const randomIndex = Math.floor(Math.random() * blocks.length);
+                return blocks[randomIndex];
+            }
+
+            function draw() {
+                gameBoard.innerHTML = '';
+
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        if (board[y][x] === 1) {
+                            const block = document.createElement('div');
+                            block.classList.add('block');
+                            block.style.top = y * blockSize + 'px';
+                            block.style.left = x * blockSize + 'px';
+                            gameBoard.appendChild(block);
+                        }
+                    }
+                }
+
+                if (currentBlock) {
+                    for (let y = 0; y < currentBlock.length; y++) {
+                        for (let x = 0; x < currentBlock[y].length; x++) {
+                            if (currentBlock[y][x] === 1) {
+                                const block = document.createElement('div');
+                                block.classList.add('block');
+                                block.style.top = (y + currentBlockY) * blockSize + 'px';
+                                block.style.left = (x + currentBlockX) * blockSize + 'px';
+                                gameBoard.appendChild(block);
+                            }
+                        }
+                    }
+                }
+            }
+
+            function collision() {
+                for (let y = 0; y < currentBlock.length; y++) {
+                    for (let x = 0; x < currentBlock[y].length; x++) {
+                        if (
+                            currentBlock[y][x] === 1 &&
+                            (currentBlockY + y >= height ||
+                                currentBlockX + x < 0 ||
+                                currentBlockX + x >= width ||
+                                board[currentBlockY + y][currentBlockX + x] === 1)
+                        ) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            function merge() {
+                for (let y = 0; y < currentBlock.length; y++) {
+                    for (let x = 0; x < currentBlock[y].length; x++) {
+                        if (currentBlock[y][x] === 1) {
+                            board[currentBlockY + y][currentBlockX + x] = 1;
+                        }
+                    }
+                }
+            }
+
+            function rotate() {
+                const rotatedBlock = currentBlock[0].map((_, index) => currentBlock.map(row => row[index])).reverse();
+                if (!collision(currentBlockX, currentBlockY, rotatedBlock)) {
+                    currentBlock = rotatedBlock;
+                }
+            }
+
+            function moveDown() {
+                currentBlockY++;
+
+                if (collision()) {
+                    currentBlockY--;
+                    merge();
+                    currentBlock = createBlock();
+                    currentBlockX = Math.floor((width - currentBlock[0].length) / 2);
+                    currentBlockY = 0;
+
+                    if (collision()) {
+                        // Game over
+                        alert('Game over');
+                        board.forEach(row => row.fill(0));
+                    }
+                }
+            }
+
+            function moveLeft() {
+                currentBlockX--;
+
+                if (collision()) {
+                    currentBlockX++;
+                }
+            }
+
+            function moveRight() {
+                currentBlockX++;
+
+                if (collision()) {
+                    currentBlockX--;
+                }
+            }
+
+            document.addEventListener('keydown', event => {
+                if (event.code === 'ArrowUp') {
+                    rotate();
+                } else if (event.code === 'ArrowDown') {
+                    moveDown();
+                } else if (event.code === 'ArrowLeft') {
+                    moveLeft();
+                } else if (event.code === 'ArrowRight') {
+                    moveRight();
+                }
+
+                draw();
+            });
+
+            let currentBlockX = Math.floor((width - currentBlock[0].length) / 2);
+            let currentBlockY = 0;
+            currentBlock = createBlock();
+
+            setInterval(() => {
+                moveDown();
+                draw();
+            }, 1000 / 2);
+        });
+    </script>
+</body>
+</html>
